@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>My first three.js app</title>
+	<style>
+		body {
+			margin: 0;
+		}
+
+		canvas {
+			width: 100%;
+			height: 90%
+		}
+
+		#toolbar {
+			color: white;
+			position: absolute;
+		}
+
+		#toolbar a {
+			color: lightgrey;
+		}
+
+		#toolbar a:hover {
+			text-decoration: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="planet-labels"></div>
+	<style>
+		.planet-label {
+			font-family: Arial, sans-serif;
+			font-size: 12px;
+			text-align: center;
+		}
+	</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.js"></script>
+	<script src="const.js"></script>
+
+	<script>
+
+		var SIZEFACTOR = 0.6;
+		// Initialisation of the scene / camera / renderer
+		var scene = new THREE.Scene();
+		const loader = new THREE.TextureLoader();
+		texture = loader.load('textures/background.jpg');
+		scene.background = texture;
+		var camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
+		var renderer = new THREE.WebGLRenderer();
+
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.shadowMap.enabled = true;
+		document.body.appendChild(renderer.domElement);
+		camera.position.z = 1.5;
+		camera.position.y = -3;
+		camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+		// Initialisation of your objects / materials / light
+
+		function buildPlanet(material, scale) {
+			var ball = new THREE.SphereGeometry(1, 32, 32);
+			const texture = new THREE.TextureLoader().load(material);
+			var planetMaterial = new THREE.MeshBasicMaterial({ map: texture });
+			var planet = new THREE.Mesh(ball, planetMaterial);
+			planet.castShadow = true;
+			planet.receiveShadow = true;
+			planet.scale.set(scale, scale, scale);
+			return planet;
+		}
+
+		// Soleil
+		var solarSystem = new THREE.Object3D();
+		scene.add(solarSystem);
+		var sun = buildPlanet("textures/sun.png", 0.2 * SIZEFACTOR);
+		sunAngle = 0;
+		solarSystem.add(sun);
+
+		// Mercure
+		var mercure = buildPlanet("textures/mercure.jpg", 0.03 * SIZEFACTOR);
+		var mercureAngle = 0;
+		solarSystem.add(mercure);
+
+		// Venus
+		var venus = buildPlanet("textures/venus.jpg", 0.02 * SIZEFACTOR);
+		var venusAngle = 0;
+		solarSystem.add(venus);
+
+		// Mars
+		var mars = buildPlanet("textures/mars.jpg", 0.01 * SIZEFACTOR);
+		var marsAngle = 0;
+		solarSystem.add(mars);
+
+		// Terre
+		var earth = buildPlanet("textures/earth.jpg", 0.03 * SIZEFACTOR);
+		var earthAngle = 0;
+		solarSystem.add(earth);
+
+		//Lune
+		var moon = buildPlanet("textures/moon.jpg", 0.005 * SIZEFACTOR);
+		var moonAngle = 0;
+		solarSystem.add(moon);
+
+		// Jupiter
+		var jupiter = buildPlanet("textures/jupiter.jpg", 0.09 * SIZEFACTOR);
+		var jupiterAngle = 0;
+		solarSystem.add(jupiter);
+
+		// Saturne
+		var saturne = buildPlanet("textures/saturne.jpg", 0.08 * SIZEFACTOR);
+		var saturneAngle = 0;
+		solarSystem.add(saturne);
+
+		// Uranus
+		var uranus = buildPlanet("textures/uranus.jpg", 0.025 * SIZEFACTOR);
+		var uranusAngle = 0;
+		solarSystem.add(uranus);
+
+		// Neptune
+		var neptune = buildPlanet("textures/neptune.jpg", 0.025 * SIZEFACTOR);
+		var neptuneAngle = 0;
+		solarSystem.add(neptune);
+
+		// Sunlight (fonctionne pas)
+		var sunlight = new THREE.PointLight(0xffffff, 1, 0);
+		sunlight.position.set(0, 0, 0);
+		sunlight.castShadow = true;
+		scene.add(sunlight);
+
+
+		// This is executed for each frames
+		function render() {
+			requestAnimationFrame(render);
+			// Animation code goes here
+			animateSun(sun);
+
+			mercureAngle += 0.03;
+			animatePlanet(mercure, mercureAngle, 0.25 * SIZEFACTOR);
+
+			venusAngle += 0.016;
+			animatePlanet(venus, venusAngle, 0.5 * SIZEFACTOR);
+
+			earthAngle += 0.018;
+			animatePlanet(earth, earthAngle, 0.75 * SIZEFACTOR);
+
+			moonAngle += 0.1;
+			animateMoon(moon, moonAngle, 0.2 * SIZEFACTOR, earth);
+
+			marsAngle += 0.01;
+			animatePlanet(mars, marsAngle, 1 * SIZEFACTOR);
+
+			jupiterAngle += 0.017;
+			animatePlanet(jupiter, jupiterAngle, 1.25 * SIZEFACTOR);
+
+			saturneAngle += 0.012;
+			animatePlanet(saturne, saturneAngle, 1.5 * SIZEFACTOR);
+
+			uranusAngle += 0.008;
+			animatePlanet(uranus, uranusAngle, 1.75 * SIZEFACTOR);
+
+			neptuneAngle += 0.008;
+			animatePlanet(neptune, neptuneAngle, 2 * SIZEFACTOR);
+			updatePlanetLabels();
+			renderer.render(scene, camera);
+		}
+		render();
+
+		function getPos(distToSun, angle) {
+			return { x: Math.cos(angle) * distToSun + sun.position.x, y: Math.sin(angle) * distToSun + sun.position.y };
+		}
+
+		function getRelativePos(distToParent, angle, parentPlanet) {
+			return { x: Math.cos(angle) * distToParent + parentPlanet.position.x, y: Math.sin(angle) * distToParent + parentPlanet.position.y };
+		}
+
+		function animatePlanet(planet, angle, distToSun) {
+			pos = getPos(distToSun, angle);
+			planet.position.x = pos.x;
+			planet.position.y = pos.y;
+			planet.rotation.z -= 0.005;
+			planet.rotation.y -= 0.002;
+		}
+		function animateMoon(moon, angle, distToParent, parent) {
+			pos = getRelativePos(distToParent, angle, parent);
+			moon.position.x = pos.x;
+			moon.position.y = pos.y;
+		}
+
+		function animateSun(sun) {
+			sun.rotation.z += 0.006;
+		}
+
+
+		// Labels des planètes
+		function createPlanetLabels() {
+			const labelsContainer = document.getElementById("planet-labels");
+
+			function createLabel(text, position) {
+				const label = document.createElement("div");
+				label.classList.add("planet-label");
+				label.textContent = text;
+				label.style.position = "absolute";
+				label.style.color = "white";
+				labelsContainer.appendChild(label);
+			}
+
+			createLabel("Soleil", { x: 0, y: 0 });
+			createLabel("Mercure", getPos(0, mercureAngle));
+			createLabel("Venus", getPos(1, venusAngle));
+			createLabel("Mars", getPos(1, marsAngle));
+			createLabel("Terre", getPos(1, earthAngle));
+			createLabel("Lune", getPos(1, saturneAngle));
+			createLabel("Jupiter", getPos(1, jupiterAngle));
+			createLabel("Saturne", getPos(1, saturneAngle));
+			createLabel("Uranus", getPos(1, uranusAngle));
+			createLabel("Neptune", getPos(1, neptuneAngle));
+
+		}
+
+		createPlanetLabels();
+
+		function updatePlanetLabels() {
+			const labels = document.querySelectorAll(".planet-label");
+
+			labels.forEach((label, index) => {
+				const planet = solarSystem.children[index];
+				const position = planet.position.clone();
+				position.project(camera);
+				const x = (position.x + 1) * window.innerWidth / 2;
+				const y = (-position.y + 1) * window.innerHeight / 2;
+
+				label.style.transform = `translate(-50%, 200%) translate(${x}px, ${y}px)`;
+			});
+		}
+		
+		// Mouvement caméra utilisateur
+		var isMouseDown = false;
+		window.addEventListener('mousedown', function () {
+			isMouseDown = true;
+		});
+
+		window.addEventListener('mouseup', function () {
+			isMouseDown = false;
+		});
+
+		var mouseY = 0;
+
+		window.addEventListener('mousemove', function (event) {
+			if (isMouseDown) {
+				mouseY = event.clientY;
+				var mouseYDelta = mouseY - (window.innerHeight / 2);
+				camera.position.z -= mouseYDelta * 0.0005; // On ajuste ici la vitesse du mouvement de caméra par rapport à l'axe Z
+				camera.lookAt(new THREE.Vector3(0, 0, 0)); 
+			}
+		});
+
+
+	</script>
+</body>
+
+</html>
